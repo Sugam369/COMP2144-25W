@@ -26,12 +26,17 @@ const createScene = async function() {
 
     // STEP 12b: Add an array to position the image properly on each of the four visible sides (notice we will not set 4 and 5)
     //options parameter to set different images on each side
-       
+    const faceUV = [];
+    faceUV[0] = new BABYLON.Vector4(0.4, 0.0, 0.6, 1.0); //rear face
+    // Vector points are (x,y for bottom left, and x,y for top right)
+    faceUV[1] = new BABYLON.Vector4(0.3, 0.0, 0.5, 1.0); //front face
+    faceUV[2] = new BABYLON.Vector4(0.6, 0.0, 1.0, 1.0); //right side
+    faceUV[3] = new BABYLON.Vector4(0.0, 0.0, 0.4, 1.0); //left side
 
     // STEP 2: Add a box to serve as a house
-    const box = BABYLON.MeshBuilder.CreateBox("box", {});
+    // const box = BABYLON.MeshBuilder.CreateBox("box", {});
     // STEP 12c: Change the above declaration to include a material wrap
-    
+    const box = BABYLON.MeshBuilder.CreateBox("box", {faceUV: faceUV, wrap: true});
 
     // STEP 3a: Preview the result - noticing that the box is sunk into the ground
     // STEP 3b: Adjust the vertical position of the box (default box height is 1 size unit)
@@ -52,6 +57,11 @@ const createScene = async function() {
     // box.rotation.y = Math.PI / 4;
     box.rotation.y = BABYLON.Tools.ToRadians(45);
     // STEP 11: Add a texture to the walls of the house (the box) (https://www.babylonjs-playground.com/textures/floor.png)
+    const boxMat = new BABYLON.StandardMaterial("boxMat");
+    // boxMat.diffuseTexture = new BABYLON.Texture("https://www.babylonjs-playground.com/textures/floor.png");
+    boxMat.diffuseTexture = new BABYLON.Texture("https://assets.babylonjs.com/environments/semihouse.png");
+    box.material = boxMat;
+
         
     // STEP 12a: Change the texture above to use an image with doors and windows instead
     
@@ -63,19 +73,35 @@ const createScene = async function() {
     });
     // STEP 8b: Scale, rotate, and position the new mesh object
     roof.scaling.x = 0.75;
-    roof.rotation.z = Math.PI / 2;
+    // roof.rotation.z = Math.PI / 2;
+    roof.rotation.z = BABYLON.Tools.ToRadians(90);
+    roof.rotation.y = BABYLON.Tools.ToRadians(-45);
+    roof.position.y = 2;
+    roof.position.x = 1;
+    roof.position.z = 2;
     // START HERE ON JANUARY 27, 2025
     
     // STEP 10: Add a texture to the roof (https://assets.babylonjs.com/environments/roof.jpg)
+    const roofMat = new BABYLON.StandardMaterial("roofMat");
+    roofMat.diffuseTexture = new BABYLON.Texture("https://assets.babylonjs.com/environments/roof.jpg");
+    roof.material = roofMat;
 
     // STEP 13a: Let's combine the box and the roof meshes into one mesh called 'house'
-    
+    // const house = BABYLON.Mesh.MergeMeshes([box, roof]);
     // STEP 13b: Yikes - now the two meshes share the same material - we must allow multiple materials within the same mesh
-    
+    const house = BABYLON.Mesh.MergeMeshes([box, roof], true, false, null, false, true);
 
     // STEP 14a: Create another instance of the house object and place it elsewhere on the ground
-    
+    let house2 = house.createInstance("house2");
+    // house2.position.x = 0;
+    // house2.position.y = 0;
+    // house2.position.z = -4;
+    house2.position = new BABYLON.Vector3(0, 0, -4);
+    house2.rotation.y = BABYLON.Tools.ToRadians(45);
     // STEP 14b: How about a third house?
+    let house3 = house.createInstance("house3");
+    house3.position = new BABYLON.Vector3(-3, 0, 1.0);
+    house3.rotation.y = BABYLON.Tools.ToRadians(-45);
 
     // STEP 4: Add some ambient sounds ("Chirping Birds Ambience" by Alex from Pixabay - https://pixabay.com/sound-effects/search/birds%20chirping/)
     const sound = new BABYLON.Sound("birds", "./media/chirping-birds-ambience-217410.mp3", scene, null, {
@@ -87,17 +113,26 @@ const createScene = async function() {
     // STEP 15b: Unzip the archive, then look at all the file formats - we will use the popular .obj file format and attempt to convert it to a .glb file using Convert3D (https://convert3d.org/)
     // STEP 15c: Note that the colour and material information has been dumped - let's try the .dae file (Collada - an open source XML 3D model format) - download the .glb file to a /media folder locally
     // STEP 15d: Drop the tree into the scene using the ImportMeshAsync method (note that the tree is very, very tiny)
-
+    const tree = BABYLON.SceneLoader.ImportMeshAsync("", "./meshes/", "Lowpoly_tree_sample.glb").then((result) => {
+        result.meshes[0].position.x = -2.5;
+        result.meshes[0].position.y = 0;
+        result.meshes[0].position.z = -2.5;
+        result.meshes[0].scaling = new BABYLON.Vector3(150, 150, 150);
+    });
     
     // STEP 16a: Scale the mesh object x, y, and z by 150 times
     // STEP 16b: Move it over a bit with -2 for the x position
 
     // STEP 17a: Set the above createScene() function to async (important, or this will not work)
     // STEP 17b: Create the xrHelper to allow the visitor to choose WebXR if they are able and they'd like
-    // const xr = await scene.createDefaultXRExperienceAsync({
-    //     floorMeshes: [ground],
-    //     optionalFeatures: true
-    // });
+    if (BABYLON.WebXRSessionManager.IsSessionSupportedAsync("immersive-vr")) {
+        const xr = await scene.createDefaultXRExperienceAsync({
+            floorMeshes: [ground],
+            optionalFeatures: true
+        });
+    } else {
+        console.log("WebXR is not supported on this device.");
+    }
 
     // Return the scene
     return scene;
